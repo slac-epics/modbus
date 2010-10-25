@@ -11,9 +11,9 @@
 #include <shareLib.h>
 
 typedef enum {
-    modbusLinkTCP,
-    modbusLinkRTU,
-    modbusLinkASCII
+    modbusLinkTCP=0,
+    modbusLinkRTU=1,
+    modbusLinkASCII=2
 } modbusLinkType;
 
 #ifdef __cplusplus
