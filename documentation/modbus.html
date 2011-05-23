@@ -1,7 +1,9 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>modbus</title>
-  <meta content="Mark Rivers" name="author" />
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type" />
 </head>
 <body>
   <h1>
@@ -41,11 +43,53 @@
       </tr>
       <tr>
         <td>
+          2-2</td>
+        <td>
+          13-Mar-2011</td>
+        <td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR2-2.tgz">modbusR2-2.tgz</a></td>
+        <td>
+          <a href="modbusDoc.html">modbusDoc.html</a></td>
+        <td>
+          <a href="modbusReleaseNotes.html">modbusReleaseNotes.html</a></td>
+        <td>
+          See release notes</td>
+      </tr>
+      <tr>
+        <td>
+          2-1</td>
+        <td>
+          7-Nov-2010</td>
+        <td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR2-1.tgz">modbusR2-1.tgz</a></td>
+        <td>
+          <a href="modbusDoc.html">modbusDoc.html</a></td>
+        <td>
+          <a href="modbusReleaseNotes.html">modbusReleaseNotes.html</a></td>
+        <td>
+          See release notes</td>
+      </tr>
+      <tr>
+        <td>
+          2-0</td>
+        <td>
+          27-Nov-2009</td>
+        <td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR2-0.tgz">modbusR2-0.tgz</a></td>
+        <td>
+          <a href="modbusDoc.html">modbusDoc.html</a></td>
+        <td>
+          <a href="modbusReleaseNotes.html">modbusReleaseNotes.html</a></td>
+        <td>
+          See release notes</td>
+      </tr>
+      <tr>
+        <td>
           1-3</td>
         <td>
           19-Sep-2008</td>
         <td>
-          <a href="pub/modbusR1-3.tgz">modbusR1-3.tgz</a></td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR1-3.tgz">modbusR1-3.tgz</a></td>
         <td>
           <a href="modbusDoc.html">modbusDoc.html</a></td>
         <td>
@@ -59,7 +103,7 @@
         <td>
           6-Sep-2007</td>
         <td>
-          <a href="pub/modbusR1-2.tgz">modbusR1-2.tgz</a></td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR1-2.tgz">modbusR1-2.tgz</a></td>
         <td>
           <a href="modbusDoc.html">modbusDoc.html</a></td>
         <td>
@@ -73,7 +117,7 @@
         <td>
           30-Apr-2007</td>
         <td>
-          <a href="pub/modbusR1-1.tgz">modbusR1-1.tgz</a></td>
+          <a href="http://cars.uchicago.edu/software/pub/modbusR1-1.tgz">modbusR1-1.tgz</a></td>
         <td>
           <a href="modbusDoc.html">modbusDoc.html</a></td>
         <td>
@@ -99,6 +143,60 @@
       </tr>
       <tr>
         <td rowspan="2">
+          2-2</td>
+        <td>
+          EPICS base</td>
+        <td>
+          3.14.12</td>
+        <td>
+          Base support</td>
+      </tr>
+      <tr>
+        <td>
+          asyn</td>
+        <td>
+          4-15</td>
+        <td>
+          Driver support</td>
+      </tr>
+      <tr>
+        <td rowspan="2">
+          2-1</td>
+        <td>
+          EPICS base</td>
+        <td>
+          3.14.11</td>
+        <td>
+          Base support</td>
+      </tr>
+      <tr>
+        <td>
+          asyn</td>
+        <td>
+          4-14</td>
+        <td>
+          Driver support</td>
+      </tr>
+      <tr>
+        <td rowspan="2">
+          2-0</td>
+        <td>
+          EPICS base</td>
+        <td>
+          3.14.10</td>
+        <td>
+          Base support</td>
+      </tr>
+      <tr>
+        <td>
+          asyn</td>
+        <td>
+          4-12</td>
+        <td>
+          Driver support</td>
+      </tr>
+      <tr>
+        <td rowspan="2">
           1-3</td>
         <td>
           EPICS base</td>
@@ -116,8 +214,6 @@
           Driver support</td>
       </tr>
       <tr>
-      </tr>
-        <tr>
         <td rowspan="2">
           1-2</td>
         <td>
@@ -173,8 +269,7 @@
   </pre>
       where X-Y is the release.</li>
     <li>This creates a &lt;top&gt; application.<br />
-      <pre>
-  .../support/modbusRX-Y
+      <pre>  .../support/modbusRX-Y
   </pre>
     </li>
     <li>Edit the <tt>configure/RELEASE</tt> file and set the paths to your installation
@@ -191,7 +286,10 @@
     by Rolf Keitel from Triumf.</p>
   <ul>
     <li>ANL/APS : In use at CARS and other beamlines.</li>
-    <li>Australian synchrotron.  ID5 microspectroscopy beamline.</li>
+    <li>NSLS X-26A beamline</li>
+    <li>SLAC</li>
+    <li>CEA in France</li>
+    <li>Australian synchrotron. ID5 microspectroscopy beamline.</li>
   </ul>
 </body>
 </html>

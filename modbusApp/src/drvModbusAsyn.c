@@ -30,7 +30,6 @@
 #include <errlog.h>
 #include <osiSock.h>
 #include <iocsh.h>
-#include <epicsExport.h>
 
 /* Asyn includes */
 #include "asynDriver.h"
@@ -40,6 +39,7 @@
 
 #include "modbus.h"
 #include "drvModbusAsyn.h"
+#include <epicsExport.h>
 
 /* Defined constants */
 
@@ -101,9 +101,11 @@ typedef struct modbusStr
     int isConnected;            /* Connection status */
     int ioStatus;               /* I/O error status */
     asynUser  *pasynUserOctet;  /* asynUser for asynOctet interface to asyn octet port */ 
+    asynUser  *pasynUserCommon; /* asynUser for asynCommon interface to asyn octet port */
     asynUser  *pasynUserTrace;  /* asynUser for asynTrace on this port */
     asynStandardInterfaces asynStdInterfaces;  /* Structure for standard interfaces */
     epicsMutexId mutexId;       /* Mutex for interlocking access to doModbusIO */
+    int modbusSlave;            /* Modbus slave address */
     int modbusFunction;         /* Modbus function code */
     int modbusStartAddress;     /* Modbus starting addess for this port */
     int modbusLength;           /* Number of words or bits of Modbus data */
@@ -178,8 +180,8 @@ static asynStatus writeInt32Array   (void *drvPvt, asynUser *pasynUser,
 
 /* These functions are not in any of the asyn interfaces */
 static void readPoller(PLC_ID pPlc);
-static int doModbusIO(PLC_ID pPlc, int function, int start, unsigned short *data, 
-                      int len);
+static int doModbusIO(PLC_ID pPlc, int slave, int function, int start, 
+                      unsigned short *data, int len);
 static unsigned short convertToBinary(unsigned short value, modbusDataType dataType);
 static unsigned short convertFromBinary(unsigned short value, modbusDataType dataType);
 
@@ -248,6 +250,7 @@ static asynInt32Array drvInt32Array = {
 
 int drvModbusAsynConfigure(char *portName, 
                               char *octetPortName, 
+                              int modbusSlave,
                               int modbusFunction, 
                               int modbusStartAddress, 
                               int modbusLength,
@@ -267,6 +270,7 @@ int drvModbusAsynConfigure(char *portName,
     pPlc->portName = epicsStrDup(portName);
     pPlc->octetPortName = epicsStrDup(octetPortName);
     pPlc->plcType = epicsStrDup(plcType);
+    pPlc->modbusSlave = modbusSlave;
     pPlc->modbusFunction = modbusFunction;
     pPlc->modbusStartAddress = modbusStartAddress;
     pPlc->modbusLength = modbusLength;
@@ -329,7 +333,16 @@ int drvModbusAsynConfigure(char *portName,
     status = pasynOctetSyncIO->connect(octetPortName, 0, &pPlc->pasynUserOctet, 0);
     if (status != asynSuccess) {
         errlogPrintf("%s::drvModbusAsynConfigure port %s"
-                     " can't connect to Octet server %s.\n",
+                     " can't connect to asynOctet on Octet server %s.\n",
+                     driver, portName, octetPortName);
+        return(asynError);
+    }
+
+    /* Connect to asyn octet port with asynCommonSyncIO */
+    status = pasynCommonSyncIO->connect(octetPortName, 0, &pPlc->pasynUserCommon, 0);
+    if (status != asynSuccess) {
+        errlogPrintf("%s::drvModbusAsynConfigure port %s"
+                     " can't connect to asynCommon on Octet server %s.\n",
                      driver, portName, octetPortName);
         return(asynError);
     }
@@ -383,8 +396,8 @@ int drvModbusAsynConfigure(char *portName,
     
     /* If this is an output function do a readOnce operation if required. */
     if (pPlc->readOnceFunction) {
-        status = doModbusIO(pPlc, pPlc->readOnceFunction, pPlc->modbusStartAddress, 
-                            pPlc->data, pPlc->modbusLength);
+        status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->readOnceFunction, 
+                            pPlc->modbusStartAddress, pPlc->data, pPlc->modbusLength);
         if (status == asynSuccess) pPlc->readOnceDone = 1;
     }
      
@@ -487,6 +500,7 @@ static void asynReport(void *drvPvt, FILE *fp, int details)
     fprintf(fp, "modbus port: %s\n", pPlc->portName);
     if (details) {
         fprintf(fp, "    asynOctet server:   %s\n", pPlc->octetPortName);
+        fprintf(fp, "    modbusSlave:        %d\n", pPlc->modbusSlave);
         fprintf(fp, "    modbusFunction:     %d\n", pPlc->modbusFunction);
         fprintf(fp, "    modbusStartAddress: 0%o\n", pPlc->modbusStartAddress);
         fprintf(fp, "    modbusLength:       0%o\n", pPlc->modbusLength);
@@ -588,25 +602,25 @@ static asynStatus writeUInt32D(void *drvPvt, asynUser *pasynUser, epicsUInt32 va
             }
             switch(pPlc->modbusFunction) {
                 case MODBUS_WRITE_SINGLE_COIL:
-                    status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                        &data, 1);
+                    status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction, 
+                                        modbusAddress, &data, 1);
                     if (status != asynSuccess) return(status);
                     break;
                 case MODBUS_WRITE_SINGLE_REGISTER:
                     /* Do this as a read/modify/write if mask is not all 0 or all 1 */
                     if ((mask == 0) || (mask == 0xFFFF)) {
-                        status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                            &data, 1);
+                        status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                             modbusAddress, &data, 1);
                     } else {
-                        status = doModbusIO(pPlc, MODBUS_READ_HOLDING_REGISTERS,
+                        status = doModbusIO(pPlc, pPlc->modbusSlave, MODBUS_READ_HOLDING_REGISTERS,
                                             modbusAddress, &data, 1);
                         if (status != asynSuccess) return(status);
                         /* Set bits that are set in the value and set in the mask */
                         data |=  (value & mask);
                         /* Clear bits that are clear in the value and set in the mask */
                         data  &= (value | ~mask);
-                        status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                            &data, 1);
+                        status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                             modbusAddress, &data, 1);
                     }
                     if (status != asynSuccess) return(status);
                     break;
@@ -764,8 +778,8 @@ static asynStatus writeInt32(void *drvPvt, asynUser *pasynUser, epicsInt32 value
             switch(pPlc->modbusFunction) {
                 case MODBUS_WRITE_SINGLE_COIL:
                 case MODBUS_WRITE_SINGLE_REGISTER:
-                    status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                        &data, 1);
+                    status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                         modbusAddress, &data, 1);
                     if (status != asynSuccess) return(status);
                     break;
                 default:
@@ -891,8 +905,8 @@ static asynStatus writeFloat64 (void *drvPvt, asynUser *pasynUser, epicsFloat64 
             switch(pPlc->modbusFunction) {
                 case MODBUS_WRITE_SINGLE_COIL:
                 case MODBUS_WRITE_SINGLE_REGISTER:
-                    status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                        &data, 1);
+                    status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                         modbusAddress, &data, 1);
                     if (status != asynSuccess) return(status);
                     break;
                 default:
@@ -1013,8 +1027,8 @@ static asynStatus writeInt32Array (void *drvPvt, asynUser *pasynUser, epicsInt32
                     for (i=0; i<nwrite; i++) {
                         pPlc->data[i] = data[i];
                     }
-                    status = doModbusIO(pPlc, pPlc->modbusFunction, modbusAddress, 
-                                        pPlc->data, nwrite);
+                    status = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                         modbusAddress, pPlc->data, nwrite);
                     if (status != asynSuccess) return(status);
                     break;
                 default:
@@ -1076,22 +1090,19 @@ static void readPoller(PLC_ID pPlc)
     /* Loop forever */    
     while (1)
     {
-        /* Sleep for the poll delay */
-        epicsThreadSleep(pPlc->pollDelay);
-
         /* Read the data */
-        pPlc->ioStatus = doModbusIO(pPlc, pPlc->modbusFunction, pPlc->modbusStartAddress, 
-                            pPlc->data, pPlc->modbusLength);
+        pPlc->ioStatus = doModbusIO(pPlc, pPlc->modbusSlave, pPlc->modbusFunction,
+                                    pPlc->modbusStartAddress, pPlc->data, pPlc->modbusLength);
         /* If we have an I/O error this time and the previous time, just try again */
         if (pPlc->ioStatus != asynSuccess &&
-            pPlc->ioStatus == prevIOStatus) continue;
+            pPlc->ioStatus == prevIOStatus) goto sleep;
 
         /* If the I/O status has changed then force callbacks */
         if (pPlc->ioStatus != prevIOStatus) pPlc->forceCallback = 1;
         
         /* We process callbacks to device support.  
          * Don't do this until EPICS interruptAccept flag is set. */
-        if (!interruptAccept) continue;
+        if (!interruptAccept) goto sleep;
                             
         /* See if any memory location has actually changed.  
          * If not, no need to do callbacks. */
@@ -1234,12 +1245,17 @@ static void readPoller(PLC_ID pPlc)
 
         /* Copy the new data to the previous data */
         memcpy(prevData, pPlc->data, pPlc->modbusLength*sizeof(unsigned short));
+
+        sleep:
+        /* Sleep for the poll delay */
+        epicsThreadSleep(pPlc->pollDelay);
+
     }
 }
 
 
 
-static int doModbusIO(PLC_ID pPlc, int function, int start, 
+static int doModbusIO(PLC_ID pPlc, int slave, int function, int start, 
                       unsigned short *data, int len)
 {
     modbusReadRequest *readReq;
@@ -1284,7 +1300,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
                 asynPrint(pPlc->pasynUserTrace, ASYN_TRACE_ERROR, 
                           "%s::doModbusIO port %s is disconnected\n",
                           driver, pPlc->portName);
-            status = pasynCommonSyncIO->disconnectDevice(pPlc->pasynUserOctet);
+            status = pasynCommonSyncIO->disconnectDevice(pPlc->pasynUserCommon);
             if (status == asynSuccess) {
                 asynPrint(pPlc->pasynUserTrace, ASYN_TRACE_FLOW, 
                           "%s::doModbusIO port %s disconnect device OK\n",
@@ -1294,7 +1310,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
                           "%s::doModbusIO port %s disconnect error=%s\n",
                           driver, pPlc->portName, pPlc->pasynUserOctet->errorMessage);
             }
-            status = pasynCommonSyncIO->connectDevice(pPlc->pasynUserOctet);
+            status = pasynCommonSyncIO->connectDevice(pPlc->pasynUserCommon);
             if (status == asynSuccess) {
                 asynPrint(pPlc->pasynUserTrace, ASYN_TRACE_FLOW, 
                           "%s::doModbusIO port %s connect device OK\n",
@@ -1312,6 +1328,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
         case MODBUS_READ_COILS:
         case MODBUS_READ_DISCRETE_INPUTS:
             readReq = (modbusReadRequest *)pPlc->modbusRequest;
+            readReq->slave = slave;
             readReq->fcode = function;
             readReq->startReg = htons((unsigned short)start);
             readReq->numRead = htons((unsigned short)len);
@@ -1323,6 +1340,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
         case MODBUS_READ_HOLDING_REGISTERS:
         case MODBUS_READ_INPUT_REGISTERS:
             readReq = (modbusReadRequest *)pPlc->modbusRequest;
+            readReq->slave = slave;
             readReq->fcode = function;
             readReq->startReg = htons((unsigned short)start);
             readReq->numRead = htons((unsigned short)len);
@@ -1332,6 +1350,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
             break;
         case MODBUS_WRITE_SINGLE_COIL:
             writeSingleReq = (modbusWriteSingleRequest *)pPlc->modbusRequest;
+            writeSingleReq->slave = slave;
             writeSingleReq->fcode = function;
             writeSingleReq->startReg = htons((unsigned short)start);
             if (*data) bitOutput = 0xFF00;
@@ -1346,6 +1365,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
             break;
         case MODBUS_WRITE_SINGLE_REGISTER:
             writeSingleReq = (modbusWriteSingleRequest *)pPlc->modbusRequest;
+            writeSingleReq->slave = slave;
             writeSingleReq->fcode = function;
             writeSingleReq->startReg = htons((unsigned short)start);
             writeSingleReq->data = (unsigned short)*data;
@@ -1363,6 +1383,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
             break;
         case MODBUS_WRITE_MULTIPLE_COILS:
             writeMultipleReq = (modbusWriteMultipleRequest *)pPlc->modbusRequest;
+            writeMultipleReq->slave = slave;
             writeMultipleReq->fcode = function;
             writeMultipleReq->startReg = htons((unsigned short)start);
             /* Pack bits into output */
@@ -1391,6 +1412,7 @@ static int doModbusIO(PLC_ID pPlc, int function, int start,
             break;
         case MODBUS_WRITE_MULTIPLE_REGISTERS:
             writeMultipleReq = (modbusWriteMultipleRequest *)pPlc->modbusRequest;
+            writeMultipleReq->slave = slave;
             writeMultipleReq->fcode = function;
             writeMultipleReq->startReg = htons((unsigned short)start);
             pShortIn = (unsigned short *)data;
@@ -1622,32 +1644,34 @@ static unsigned short convertFromBinary(unsigned short value,
 /* iocsh functions */
 
 static const iocshArg ConfigureArg0 = {"Port name",            iocshArgString};
-static const iocshArg ConfigureArg1 = {"Octet port name",     iocshArgString};
-static const iocshArg ConfigureArg2 = {"Modbus function code", iocshArgInt};
-static const iocshArg ConfigureArg3 = {"Modbus start address", iocshArgInt};
-static const iocshArg ConfigureArg4 = {"Modbus length",        iocshArgInt};
-static const iocshArg ConfigureArg5 = {"Data type (0=binary, 1=BCD)", iocshArgInt};
-static const iocshArg ConfigureArg6 = {"Poll time (msec)",     iocshArgInt};
-static const iocshArg ConfigureArg7 = {"PLC type",             iocshArgString};
+static const iocshArg ConfigureArg1 = {"Octet port name",      iocshArgString};
+static const iocshArg ConfigureArg2 = {"Modbus slave address", iocshArgInt};
+static const iocshArg ConfigureArg3 = {"Modbus function code", iocshArgInt};
+static const iocshArg ConfigureArg4 = {"Modbus start address", iocshArgInt};
+static const iocshArg ConfigureArg5 = {"Modbus length",        iocshArgInt};
+static const iocshArg ConfigureArg6 = {"Data type (0=binary, 1=BCD)", iocshArgInt};
+static const iocshArg ConfigureArg7 = {"Poll time (msec)",     iocshArgInt};
+static const iocshArg ConfigureArg8 = {"PLC type",             iocshArgString};
 
-static const iocshArg * const drvModbusAsynConfigureArgs[8] = {
-	&ConfigureArg0,
-	&ConfigureArg1,
-	&ConfigureArg2,
-	&ConfigureArg3,
-	&ConfigureArg4,
-	&ConfigureArg5,
-        &ConfigureArg6,
-        &ConfigureArg7
+static const iocshArg * const drvModbusAsynConfigureArgs[9] = {
+    &ConfigureArg0,
+    &ConfigureArg1,
+    &ConfigureArg2,
+    &ConfigureArg3,
+    &ConfigureArg4,
+    &ConfigureArg5,
+    &ConfigureArg6,
+    &ConfigureArg7,
+    &ConfigureArg8
 };
 
 static const iocshFuncDef drvModbusAsynConfigureFuncDef=
-                                                    {"drvModbusAsynConfigure", 8,
+                                                    {"drvModbusAsynConfigure", 9,
                                                      drvModbusAsynConfigureArgs};
 static void drvModbusAsynConfigureCallFunc(const iocshArgBuf *args)
 {
-  drvModbusAsynConfigure(args[0].sval, args[1].sval, args[2].ival, args[3].ival, 
-                            args[4].ival, args[5].ival, args[6].ival, args[7].sval);
+  drvModbusAsynConfigure(args[0].sval, args[1].sval, args[2].ival, args[3].ival, args[4].ival, 
+                         args[5].ival, args[6].ival, args[7].ival, args[8].sval);
 }
 
 
