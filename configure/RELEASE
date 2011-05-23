@@ -1,27 +1,65 @@
-#RELEASE Location of external products
-# Run "gnumake clean uninstall install" in the application
-# top directory each time this file is changed.
+# RELEASE - Location of external products
 #
-# NOTE: The build does not check dependancies on files
-# external to this application. Thus you should run
-# "gnumake clean uninstall install" in the top directory
-# each time EPICS_BASE, SNCSEQ, or any other external
-# module defined in the RELEASE file is rebuilt.
+# Note: This file will be scanned to automatically generate
+#       include path definitions etc.
+#       The order of the following declarations will be retained
+#       within those definitions.
+#
+# Note that "#!" marks lines that can be uncommented.
+#
 
-TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
+# Pickup variable definitions to be used below:
+include $(TOP)/RELEASE_SITE
 
-ASYN=/corvette/home/epics/devel/asyn-4-15
-
+# =============================================================
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
+# =============================================================
 #INSTALL_LOCATION_APP=<fullpathname>
 
-#If using the sequencer, point SNCSEQ at its top directory:
-# SNCSEQ=$(EPICS_BASE)/../modules/src/seq
+# =============================================================
+# Define location of module tree with respect to
+# EPICS_SITE_TOP -- comes from RELEASE_SITE
+# =============================================================
+EPICS_MODULES=$(MODULES_SITE_TOP)
 
+
+
+# If any motor controller communication mechanism besides the VME backplane is
+# required, then ASYN must be defined.
+# Recommended ASYN release: R4-13 or higher
+#ASYN_MODULE_VERSION=asyn-R4-16-lcls2
+ASYN_MODULE_VERSION=asyn-R4-17-RC1-lcls1
+
+# Need the sequencer for the MM4005 and XPS trajectory scanning
+# Recommended SNCSEQ release: R2-0-12 or higher
+#SEQ_MODULE_VERSION=seq-R2-0-11-lcls4
+
+
+
+
+
+# ==============================================================
+# Define the version of EPICS BASE that you will use
+# =============================================================
+# Recommended EPICS release: R3.14.11 or higher
+# Note that base-R3-14-8-2-lcls6 is a softlink to base-R3-14-8-2-lcls6_p1
+#BASE_MODULE_VERSION=base-R3-14-8-2-lcls6_p1
+BASE_MODULE_VERSION=$(EPICS_BASE_VER)
+
+# ============================================================
+# External Support
+# ============================================================
+ASYN=$(EPICS_MODULES)/asyn/$(ASYN_MODULE_VERSION)
+
+#SNCSEQ=$(EPICS_MODULES)/seq/$(SEQ_MODULE_VERSION)
+
+
+# =================================================================
+# Define EPICS_BASE
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/corvette/usr/local/epics/base-3.14.12
+# =================================================================
+EPICS_BASE=$(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
 
-#Capfast users may need the following definitions
-#CAPFAST_TEMPLATES=
-#SCH2EDIF_PATH=
+# End of file
+
