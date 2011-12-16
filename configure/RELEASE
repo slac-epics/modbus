@@ -28,15 +28,7 @@ EPICS_MODULES=$(MODULES_SITE_TOP)
 # If any motor controller communication mechanism besides the VME backplane is
 # required, then ASYN must be defined.
 # Recommended ASYN release: R4-13 or higher
-#ASYN_MODULE_VERSION=asyn-R4-16-lcls2
-ASYN_MODULE_VERSION=asyn-R4-17-RC1-lcls1
-
-# Need the sequencer for the MM4005 and XPS trajectory scanning
-# Recommended SNCSEQ release: R2-0-12 or higher
-#SEQ_MODULE_VERSION=seq-R2-0-11-lcls4
-
-
-
+ASYN_MODULE_VERSION=asyn-R4-18-lcls1
 
 
 # ==============================================================
@@ -44,11 +36,10 @@ ASYN_MODULE_VERSION=asyn-R4-17-RC1-lcls1
 # =============================================================
 # Recommended EPICS release: R3.14.11 or higher
 # Note that base-R3-14-8-2-lcls6 is a softlink to base-R3-14-8-2-lcls6_p1
-#BASE_MODULE_VERSION=base-R3-14-8-2-lcls6_p1
 BASE_MODULE_VERSION=$(EPICS_BASE_VER)
 
 # ============================================================
-# External Support
+# External Support: Module Location
 # ============================================================
 ASYN=$(EPICS_MODULES)/asyn/$(ASYN_MODULE_VERSION)
 

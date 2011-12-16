@@ -1,3 +1,6 @@
+modbus-R2-2-lcls2: 
+Build with asyn version: asyn-R4-18-lcls1
+
 modbus-R2-2-lcls1: 
 Modbus Support from Mark Rivers with site specific mods to support SLAC build system.
 R2-0 introduced a 20 ms delay before each Modbus write. 
