@@ -1,3 +1,8 @@
+modbus-R2-2-lcls3: Build with asyn-R4-18-lcls1_OLD_IPAC
+                   Needed to use another version asyn due to 
+                   IPAC dependency in Magnet App; also the IPAC 
+                   software module versions need to be reconciled
+
 modbus-R2-2-lcls2: 
 Build with asyn version: asyn-R4-18-lcls1
 
