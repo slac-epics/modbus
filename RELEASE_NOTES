@@ -1,3 +1,7 @@
+modbus-R2-4_1-0:   update to modbusR2-4 from CARS
+                   See website for info:
+                   http://cars9.uchicago.edu/software/epics/modbusReleaseNotes.html
+
 modbus-R2-2-lcls3: Build with asyn-R4-18-lcls1_OLD_IPAC
                    Needed to use another version asyn due to 
                    IPAC dependency in Magnet App; also the IPAC 
