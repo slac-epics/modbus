@@ -1,6 +1,6 @@
 # Makefile
 
-TOP = ../../
+TOP = ../..
 include $(TOP)/configure/CONFIG
 
 #----------------------------------------
@@ -22,6 +22,7 @@ LIB_SRCS += drvModbusAsyn.c
 LIB_SRCS += modbusInterpose.c
 LIB_LIBS += asyn 
 LIB_LIBS += $(EPICS_BASE_IOC_LIBS)
+LIB_SYS_LIBS_WIN32 += WS2_32
 
 #===========================
 
