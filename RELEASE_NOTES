@@ -1,4 +1,7 @@
+modbus-R2-4_1-1:   Build against ASYN_MODULE_VERSION=asyn-R4-20_1-1; build all architectures
+
 modbus-R2-4_1-0:   update to modbusR2-4 from CARS
+
                    See website for info:
                    http://cars9.uchicago.edu/software/epics/modbusReleaseNotes.html
 

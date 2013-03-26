@@ -28,7 +28,7 @@ EPICS_MODULES=$(MODULES_SITE_TOP)
 # If any motor controller communication mechanism besides the VME backplane is
 # required, then ASYN must be defined.
 # Recommended ASYN release: R4-13 or higher
-ASYN_MODULE_VERSION=asyn-R4-19_1-0
+ASYN_MODULE_VERSION=asyn-R4-20_1-1
 
 
 # ==============================================================
