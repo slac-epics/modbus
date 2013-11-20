@@ -5,5 +5,6 @@ record(ao, "$(P)$(R)") {
     field(HOPR,"$(HOPR=0)")
     field(LOPR,"$(LOPR=0)")
     field(PREC,"$(PREC=0)")
+    field(EGU, "$(UNITS)")
 }
 
