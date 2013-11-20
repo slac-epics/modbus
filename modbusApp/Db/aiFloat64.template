@@ -6,5 +6,6 @@ record(ai, "$(P)$(R)") {
     field(LOPR,"$(LOPR)")
     field(PREC,"$(PREC)")
     field(SCAN,"$(SCAN)")
+    field(EGU, "$(UNITS)")
 }
 
