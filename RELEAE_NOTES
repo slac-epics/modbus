@@ -1,0 +1,5 @@
+
+Alex Wallace
+2014-07-28
+Upgraded to 2-6 due to troubles with streamdevice. Needed to start using the most recent version of Asyn and Stream device.
+Commented out the test sync driver because it was giving me trouble. Look for it when upgrading the module again.
