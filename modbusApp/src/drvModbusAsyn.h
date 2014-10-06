@@ -56,7 +56,7 @@ typedef enum {
     dataTypeFloat64BE         /* 64-bit float big-endian       drvUser=FLOAT64_BE */
 } modbusDataType_t;
 
-#define MAX_MODBUS_DATA_TYPES 11
+#define MAX_MODBUS_DATA_TYPES 13
 
 
 int drvModbusAsynConfigure(char *portName, 
