@@ -1,3 +1,10 @@
+modbus-R2-7_0-0:   update to modbusR2-7 from CARS
+                   
+                   See website for info:
+                   http://cars9.uchicago.edu/software/epics/modbusReleaseNotes.html
+
+                   Build against ASYN_MODULE_VERSION=asyn-R4-23_1-1; build all architectures
+                   
 modbus-R2-4_1-2:   Build against ASYN_MODULE_VERSION=asyn-R4-21_1-0; build all architectures
 modbus-R2-4_1-0-2: Build against ASYN_MODULE_VERSION=asyn-R4-21_1-0; build all architectures
 
