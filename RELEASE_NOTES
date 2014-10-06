@@ -1,25 +1,9 @@
-modbus-R2-7_0-1:   Added INT32_LE_ALT and INT32_BE_ALT to support alternative data format
-                   
-                   Standard data format:
-                   #  I/O Offset      High Byte    Low Byte
-                   #      3              -           -
-                   #      2              D3          D2
-                   #      1              D1          D0
-                   #      0              -           -
-                   
-                   Alternative data format:
-                   #  I/O Offset      High Byte    Low Byte
-                   #      3              D3          D2
-                   #      2              -           -
-                   #      1              D1          D0
-                   #      0              -           -
-
 modbus-R2-7_0-0:   update to modbusR2-7 from CARS
                    
                    See website for info:
                    http://cars9.uchicago.edu/software/epics/modbusReleaseNotes.html
 
-                   Build against ASYN_MODULE_VERSION=asyn-R4-23_1-1; build all architectures
+                   Build against ASYN_MODULE_VERSION=asyn-R4-21_1-0; build all architectures
                    
 modbus-R2-4_1-2:   Build against ASYN_MODULE_VERSION=asyn-R4-21_1-0; build all architectures
 modbus-R2-4_1-0-2: Build against ASYN_MODULE_VERSION=asyn-R4-21_1-0; build all architectures
