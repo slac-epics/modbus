@@ -122,7 +122,9 @@ static modbusDataTypeStruct modbusDataTypes[MAX_MODBUS_DATA_TYPES] = {
     {dataTypeBCDSigned,    MODBUS_BCD_SIGNED_STRING},    
     {dataTypeInt16,        MODBUS_INT16_STRING},    
     {dataTypeInt32LE,      MODBUS_INT32_LE_STRING},    
+    {dataTypeInt32LEAlt,   MODBUS_INT32_LE_ALT_STRING},
     {dataTypeInt32BE,      MODBUS_INT32_BE_STRING},    
+    {dataTypeInt32BEAlt,   MODBUS_INT32_BE_ALT_STRING},
     {dataTypeFloat32LE,    MODBUS_FLOAT32_LE_STRING},    
     {dataTypeFloat32BE,    MODBUS_FLOAT32_BE_STRING},    
     {dataTypeFloat64LE,    MODBUS_FLOAT64_LE_STRING},    
@@ -1880,10 +1882,22 @@ asynStatus readPlcInt(modbusStr_t *pPlc, int offset, epicsInt32 *output)
             int16_32.uint16[bigWord]    = pPlc->data[offset+1];
             result = int16_32.int32;
             break;
+
+        case dataTypeInt32LEAlt:
+            int16_32.uint16[littleWord] = pPlc->data[offset];
+            int16_32.uint16[bigWord]    = pPlc->data[offset+2];
+            result = int16_32.int32;
+            break;
             
         case dataTypeInt32BE:
             int16_32.uint16[bigWord]    = pPlc->data[offset];
             int16_32.uint16[littleWord] = pPlc->data[offset+1];
+            result = int16_32.int32;
+            break;
+            
+        case dataTypeInt32BEAlt:
+            int16_32.uint16[bigWord]    = pPlc->data[offset];
+            int16_32.uint16[littleWord] = pPlc->data[offset+2];
             result = int16_32.int32;
             break;
             
@@ -2014,7 +2028,9 @@ asynStatus readPlcFloat(modbusStr_t *pPlc, int offset, epicsFloat64 *output)
         case dataTypeBCDUnsigned:
         case dataTypeInt16:
         case dataTypeInt32LE:
+        case dataTypeInt32LEAlt:
         case dataTypeInt32BE:
+        case dataTypeInt32BEAlt:
             status = readPlcInt(pPlc, offset, &iValue);
             *output = (epicsFloat64)iValue;
             break;
