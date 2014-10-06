@@ -1,3 +1,19 @@
+modbus-R2-7_0-1:   Added INT32_LE_ALT and INT32_BE_ALT to support alternative data format
+                   
+                   Standard data format:
+                   #  I/O Offset      High Byte    Low Byte
+                   #      3              -           -
+                   #      2              D3          D2
+                   #      1              D1          D0
+                   #      0              -           -
+                   
+                   Alternative data format:
+                   #  I/O Offset      High Byte    Low Byte
+                   #      3              D3          D2
+                   #      2              -           -
+                   #      1              D1          D0
+                   #      0              -           -
+
 modbus-R2-7_0-0:   update to modbusR2-7 from CARS
                    
                    See website for info:
