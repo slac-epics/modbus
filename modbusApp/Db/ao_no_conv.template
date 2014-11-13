@@ -1,0 +1,10 @@
+# ao record template for register outputs
+record(ao, "$(P)$(R)") {
+    field(DTYP,"asynInt32")
+    field(OUT,"@asynMask($(PORT) $(OFFSET) $(BITS))MODBUS_DATA")
+    field(LINR,"NO CONVERSION")
+    field(HOPR,"$(HOPR)")
+    field(LOPR,"$(LOPR)")
+    field(PREC,"$(PREC)")
+}
+
