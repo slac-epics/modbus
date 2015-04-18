@@ -1,3 +1,5 @@
+modbus-R2-7_0-2:   Build against new asyn: asyn-R4-25_1-0 (ELW 18-Apr-2015)
+
 modbus-R2-7_0-1:   Added INT32_LE_ALT and INT32_BE_ALT to support alternative data format
                    
                    Standard data format:
