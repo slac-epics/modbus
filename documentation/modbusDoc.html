@@ -12,11 +12,11 @@
     <h1>
       Driver Support for Modbus Protocol under EPICS</h1>
     <h2>
-      Release 2-4</h2>
+      Release 2-9</h2>
     <h2>
       Mark Rivers</h2>
     <h2>
-      May 22, 2012</h2>
+      August 23, 2016</h2>
     <hr />
   </div>
   <h2>
@@ -77,8 +77,8 @@
         <td>
           RTU</td>
         <td>
-          RTU uses an additional CRC for packet checking. RTU is normally run over serial
-          communicaton linke, i.e. RS-232, RS-422, or RS-485. The protocol directly transmits
+          RTU is normally run over serial communication links, i.e. RS-232, RS-422, or RS-485.
+          RTU uses an additional CRC for packet checking. The protocol directly transmits
           each byte as 8 data bits, so uses "binary" rather than ASCII encoding. When using
           serial links start and end of message frames is detected by timing rather than by
           specific characters. RTU can also be run over TCP, though this is less common than
@@ -89,11 +89,12 @@
           Serial ASCII</td>
         <td>
           Serial protocol, which is normally run over serial communication links, i.e. RS-232,
-          RS-422, or RS-485. The protocol encodes each byte as 2 ASCII characters. The start
-          and end of message frames is detected by specific characters (":" to start a message
-          and CR/LF to end a message). This protocol is less efficient than RTU, but may be
-          more reliable in some environments. ASCII can also be run over TCP, though this
-          is much less common than the standard Modbus TCP.</td>
+          RS-422, or RS-485. Serial ASCII uses an additional LRC for packet checking. The
+          protocol encodes each byte as 2 ASCII characters. The start and end of message frames
+          is detected by specific characters (":" to start a message and CR/LF to end a message).
+          This protocol is less efficient than RTU, but may be more reliable in some environments.
+          ASCII can also be run over TCP, though this is much less common than the standard
+          Modbus TCP.</td>
       </tr>
     </tbody>
   </table>
@@ -178,7 +179,7 @@
   <h3>
     Modbus function codes</h3>
   <p>
-    <b>modbus</b> supports the following 8 Modbus function codes:
+    <b>modbus</b> supports the following 9 Modbus function codes:
   </p>
   <table border="1" cellpadding="2" cellspacing="2" style="text-align: left">
     <tbody>
@@ -257,6 +258,14 @@
           Write Multiple Registers</td>
         <td>
           16</td>
+      </tr>
+      <tr>
+        <td>
+          16-bit word access</td>
+        <td>
+          Read/Write Multiple Registers</td>
+        <td>
+          23</td>
       </tr>
     </tbody>
   </table>
@@ -486,7 +495,7 @@
     The architecture of the <b>modbus</b> module from the top-level down consists of
     the following 4 layers:</p>
   <ol>
-    <li><a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-7/asynDriver.html#genericEpicsSupport">
+    <li><a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-29/asynDriver.html#genericEpicsSupport">
       EPICS asyn device support</a>. . This is the general purpose device support provided
       with <a href="http://www.aps.anl.gov/epics/modules/soft/asyn">asyn</a> There is
       no special device support needed or provided with <b>modbus</b>.</li>
@@ -501,8 +510,8 @@
       via the standard asynOctet interface to both the overlying Modbus driver (layer
       2) and to the underlying asyn hardware port driver (layer 4).</li>
     <li>An asyn port driver that handles the low-level communication (TCP/IP or serial).
-      This is one of the standard port drivers provided with asyn, i.e. <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-7/asynDriver.html#drvAsynIPPort">
-        drvAsynIPPort</a> or <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-7/asynDriver.html#drvAsynSerialPort">
+      This is one of the standard port drivers provided with asyn, i.e. <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-29/asynDriver.html#drvAsynIPPort">
+        drvAsynIPPort</a> or <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-29/asynDriver.html#drvAsynSerialPort">
           drvAsynSerialPort</a>. They are not part of the <b>modbus</b> module.</li>
   </ol>
   <p>
@@ -511,29 +520,37 @@
     quite small (fewer than 2,500 lines).
   </p>
   <p>
-    Each <b>modbus</b> port driver is assigned a single Modbus function code and a single
-    contiguous range of Modbus memory, up to 2000 bits or 125 words. One typically creates
-    several <b>modbus</b> port drivers for a single PLC, each driver reading or writing
-    a different set of discrete inputs, coils, input registers or holding registers.
-    For example, one might create one port driver to read discrete inputs X0-X37, a
-    second to read control registers C0-C377, and a third to write control registers
-    C300-C377.
+    Each <b>modbus</b> port driver is assigned a single Modbus function code. Usually
+    a drivers is also assigned a single contiguous range of Modbus memory, up to 2000
+    bits or 125 words. One typically creates several <b>modbus</b> port drivers for
+    a single PLC, each driver reading or writing a different set of discrete inputs,
+    coils, input registers or holding registers. For example, one might create one port
+    driver to read discrete inputs X0-X37, a second to read control registers C0-C377,
+    and a third to write control registers C300-C377. In this case the asyn address
+    that is used by each record is relative to the starting address for that driver.</p>
+  <p>
+    It is also possible to create a driver is allowed to address any location in the
+    16-bit Modbus address space. Each read or write operation is still limited to the
+    125/123 word limits. In this case the asyn address that is used by each record is
+    the absolute Modbus address.
   </p>
   <p>
-    The behavior of the port driver differs for read function codes (1, 2, 3, 4) and
-    write function codes (5, 6, 15, 16).
+    The behavior of the port driver differs for read function codes (1, 2, 3, 4), write
+    function codes (5, 6, 15, 16), and read/write function codes (23).
   </p>
   <h3>
     Modbus read functions</h3>
   <p>
-    For read function codes the driver spawns a poller thread. The poller thread reads
-    the entire block of Modbus memory assigned to this port in a single Modbus transaction.
-    The values are stored in a buffer in the driver. The delay between polls is set
-    when the port driver is created, and can be changed later at run-time. The values
-    are read by EPICS using the standard asyn interfaces (asynUInt32Digital, asynInt32,
-    asynFloat64, etc.) The values that are read are the last stored values from the
-    poller thread. This means that EPICS read operations are <i>synchronous</i>, i.e.
-    they do not block because no Modbus I/O is required.
+    For read function codes (when absolute addressing is not being used) the driver
+    spawns a poller thread. The poller thread reads the entire block of Modbus memory
+    assigned to this port in a single Modbus transaction. The values are stored in a
+    buffer in the driver. The delay between polls is set when the port driver is created,
+    and can be changed later at run-time. The values are read by EPICS using the standard
+    asyn interfaces (asynUInt32Digital, asynInt32, asynFloat64, etc.) The values that
+    are read are the last stored values from the poller thread. The means that EPICS
+    read operations are <i>asynchronous</i>, i.e. they can block. This is because although
+    they do not directly result in Modbus I/O, they do need to wait for a mutex that
+    indicates that the poller thread is done.
   </p>
   <p>
     For read functions it is possible to set the EPICS records to "I/O Intr" scanning.
@@ -541,14 +558,25 @@
     is new data for that input. This improves efficiency, because such records only
     process when needed, they do not need to be periodically scanned.
   </p>
+  <p>
+    The previous paragraphs describe the normal configuration for read operations, where
+    relative Modbus addressing is being used. If absolute addressing is being used then
+    the driver does not create a poller thread, because it does not know what parts
+    of the Modbus address space should be polled. In this case read records cannot have
+    SCAN=I/O Intr. They must either be periodically scanned, or scanned by directly
+    causing the record to process, such as writing 1 to the .PROC field. Each time the
+    record processes it will result in a separate Modbus read operation. NOTE: This
+    is <b>much</b> less efficient that reading many registers at once with relative
+    Modbus addressing. For this reason absolute Modbus addressing with read functions
+    should normally be avoided.</p>
   <h3>
     Modbus write functions</h3>
   <p>
     For write function codes the driver does not itself create a separate thread. Rather
     the driver does the Modbus I/O immediately in response to the write operations on
-    the standard asyn interfaces. This means that EPICS write operations are <i>asynchronous</i>,
-    i.e. they do block because Modbus I/O is required. When the <b>modbus</b> driver
-    is created it tells asynManager that it can block, and asynManager creates a separate
+    the standard asyn interfaces. This means that EPICS write operations are also <i>asynchronous</i>,
+    i.e. they block because Modbus I/O is required. When the <b>modbus</b> driver is
+    created it tells asynManager that it can block, and asynManager creates a separate
     thread that executes the write operations.
   </p>
   <p>
@@ -569,11 +597,32 @@
     device. The modbusInterposeConfig function allows one to specify a write delay in
     msec before each write.</p>
   <h3>
+    Modbus write/read functions</h3>
+  <p>
+    Modbus function code 23 allows for writing a set of registers and reading a set
+    of registers in a single operation. The read operation is performed after the write
+    operation, and the register range to be read can be different from the register
+    range to be written. Function code 23 is not widely used, and the write/read operation
+    is not a good fit to the <b>modbus</b> driver model of read-only and write-only
+    drivers. Function code 23 is implemented in <b>modbus</b> with the following restrictions:</p>
+  <ul>
+    <li>A driver that uses Modbus function code 23 is either <i>read-only</i> or <i>write-only</i>.</li>
+    <li>A read-only driver is created by specifying function code 123 to the drvModbusAsynConfigure
+      command described below. The driver will use Modbus function code 23 for the Modbus
+      protocol. It will only read registers (like function codes 3 and 4), it will not
+      write any data to the device.</li>
+    <li>A write-only driver is created by specifying function code 223 to the drvModbusAsynConfigure
+      command described below. The driver will use Modbus function code 23 for the Modbus
+      protocol. It will only write registers (like function code 16), it will not read
+      any data from the device.</li>
+  </ul>
+  <h3>
     Platform independence</h3>
   <p>
     <b>modbus</b> should run on all EPICS platforms. It has been tested on linux-x86,
-    vxWorks, win32-x86 (native Windows with Microsoft VS .NET 2003 C++ compiler), and
-    cygwin-x86 (Windows with gcc compiler and Cygwin library).
+    linux-x86_64, vxWorks, win32-x86, windows-x64, (native Windows with Microsoft Visual
+    Studio 2010 C++ compiler), and cygwin-x86 (Windows with gcc compiler and Cygwin
+    library).
   </p>
   <p>
     The only thing that may be architecture dependent in <b>modbus</b> is the structure
@@ -617,7 +666,7 @@
 asynSetOption(portName, addr, key, value)
 </pre>
   <p>
-    Documentation on these commands can be found in the <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-7/asynDriver.html#drvAsynSerialPort">
+    Documentation on these commands can be found in the <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-29/asynDriver.html#drvAsynSerialPort">
       asynDriver documentation</a>.
   </p>
   <p>
@@ -642,7 +691,7 @@ asynSetOption("Koyo1",0,"stop","1")
 asynOctetSetInputEos(portName, addr, eos)
 </pre>
   <p>
-    Documentation on these commands can be found in the <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-7/asynDriver.html#DiagnosticAids">
+    Documentation on these commands can be found in the <a href="http://www.aps.anl.gov/epics/modules/soft/asyn/R4-29/asynDriver.html#DiagnosticAids">
       asynDriver documentation</a>.</p>
   <p>
     The following example creates an asyn local serial port driver called "Koyo1" on
@@ -799,7 +848,8 @@ asynOctetSetInputEos("Koyo1",0,"\r\n")
         <td>
           int</td>
         <td>
-          Modbus function code (1, 2, 3, 4, 5, 6, 15, or 16).</td>
+          Modbus function code (1, 2, 3, 4, 5, 6, 15, 16, 123 (for 23 read-only), or 223 (for
+          23 write-only)).</td>
       </tr>
       <tr>
         <td>
@@ -807,8 +857,9 @@ asynOctetSetInputEos("Koyo1",0,"\r\n")
         <td>
           int</td>
         <td>
-          Start address for the Modbus data segment to be accessed.<br />
-          (0-65535 decimal, 0-0177777 octal).</td>
+          Start address for the Modbus data segment to be accessed. For relative addressing
+          this must be in the range 0-65535 decimal, or 0-0177777 octal. For absolute addressing
+          this must be set to -1.</td>
       </tr>
       <tr>
         <td>
@@ -818,9 +869,14 @@ asynOctetSetInputEos("Koyo1",0,"\r\n")
         <td>
           The length of the Modbus data segment to be accessed.<br />
           This is specified in bits for Modbus functions 1, 2, 5 and 15.<br />
-          It is specified in 16-bit words for Modbus functions 3, 4, 6 and 16.<br />
+          It is specified in 16-bit words for Modbus functions 3, 4, 6, 16, or 23.<br />
           Length limit is 2000 for functions 1 and 2, 1968 for functions 5 and 15,<br />
-          125 for functions 3 and 4, and 123 for functions 6 and 16. </td>
+          125 for functions 3 and 4, and 123 for functions 6, 16, and 23.<br />
+          For absolute addressing this must be set to the size of required by the largest
+          single Modbus operation that may be used. This would be 1 if all Modbus reads and
+          writes are for 16-bit registers, but it would be 4 if 64-bit floats (4 16-bit registers)
+          are being used, and 100 (for example) if an Int32 waveform record with NELM=100
+          is being read or written.</td>
       </tr>
       <tr>
         <td>
@@ -993,6 +1049,40 @@ asynOctetSetInputEos("Koyo1",0,"\r\n")
           64-bit floating point, big endian (most significant word at Modbus address N, least
           significant word at Modbus address N+3)</td>
       </tr>
+      <tr>
+        <td>
+          11</td>
+        <td>
+          STRING_HIGH</td>
+        <td>
+          String data. One character is stored in the high byte of each register.</td>
+      </tr>
+      <tr>
+        <td>
+          12</td>
+        <td>
+          STRING_LOW</td>
+        <td>
+          String data. One character is stored in the low byte of each register.</td>
+      </tr>
+      <tr>
+        <td>
+          11</td>
+        <td>
+          STRING_HIGH_LOW</td>
+        <td>
+          String data. Two characters are stored in each register, the first in the high byte
+          and the second in the low byte.</td>
+      </tr>
+      <tr>
+        <td>
+          11</td>
+        <td>
+          STRING_LOW_HIGH</td>
+        <td>
+          String data. Two characters are stored in each register, the first in the low byte
+          and the second in the high byte.</td>
+      </tr>
     </tbody>
   </table>
   <p>
@@ -1069,6 +1159,7 @@ record(ai, "$(P)$(R)") {
     <li>asynInt32</li>
     <li>asynInt32Array</li>
     <li>asynFloat64</li>
+    <li>asynOctet</li>
     <li>asynCommon</li>
     <li>asynDrvUser</li>
   </ul>
@@ -1100,6 +1191,10 @@ record(ai, "$(P)$(R)") {
     X inputs are at this Modbus starting address for Modbus function 2, so <b>offset=2</b>
     is input X2.</p>
   <p>
+    If absolute addressing is being used then the <b>offset</b> parameter is an absolute
+    16-bit Modbus address, and is not relative to the starting Modbus address, which
+    is -1.</p>
+  <p>
     The <b>offset</b> is specified in words for drivers using Modbus functions 3, 4,
     6 and 16 that address input registers or holding registers. For example, if the
     Modbus function is set to 6 and the Modbus address is 040600 then <b>offset=2</b>
@@ -1109,6 +1204,10 @@ record(ai, "$(P)$(R)") {
   <p>
     For 32-bit or 64-bit data types (INT32_LE, INT32_BE, FLOAT32_LE, FLOAT32_BE) the
     <b>offset</b> specifies the location of the first 16-bit register, and the second
+    register is at <b>offset+1</b>, etc.</p>
+  <p>
+    For string data types (STRING_HIGH, STRING_LOW, STRING_HIGH_LOW, STRING_LOW_HIGH)
+    the <b>offset</b> specifies the location of the first 16-bit register, and the second
     register is at <b>offset+1</b>, etc.</p>
   <h3>
     asynUInt32Digital</h3>
@@ -1155,7 +1254,7 @@ field(INP,"@asynMask(portName,offset,mask,timeout)drvUser")
       </tr>
       <tr>
         <td>
-          3, 4</td>
+          3, 4, 23</td>
         <td>
           16-bit word</td>
         <td>
@@ -1290,13 +1389,13 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           MODBUS_DATA</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, bi, mbbi, longin</td>
         <td>
           value = (epicsUInt32)Modbus data</td>
       </tr>
       <tr>
         <td>
-          3, 4</td>
+          3, 4, 23</td>
         <td>
           16-bit words</td>
         <td>
@@ -1318,13 +1417,13 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           MODBUS_DATA</td>
         <td>
-          ao, mbbo, longout</td>
+          ao, bo, mbbo, longout</td>
         <td>
           Modbus write value</td>
       </tr>
       <tr>
         <td>
-          6,16</td>
+          6, 16, 23</td>
         <td>
           16-bit words</td>
         <td>
@@ -1344,9 +1443,24 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           NA</td>
         <td>
+          MODBUS_READ</td>
+        <td>
+          ao, bo, longout</td>
+        <td>
+          Writing to a Modbus input driver with this drvUser value will force the poller thread
+          to run once immediately, regardless of the value of POLL_DELAY.</td>
+      </tr>
+      <tr>
+        <td>
+          Any</td>
+        <td>
+          NA</td>
+        <td>
+          NA</td>
+        <td>
           READ_OK</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, longin</td>
         <td>
           Returns number of successful read operations on this asyn port</td>
       </tr>
@@ -1360,7 +1474,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           WRITE_OK</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, longin</td>
         <td>
           Returns number of successful write operations on this asyn port</td>
       </tr>
@@ -1374,7 +1488,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           IO_ERRORS</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, longin</td>
         <td>
           Returns number of I/O errors on this asyn port</td>
       </tr>
@@ -1388,7 +1502,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           LAST_IO_TIME</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, longin</td>
         <td>
           Returns number of milliseconds for last I/O operation</td>
       </tr>
@@ -1402,9 +1516,23 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           MAX_IO_TIME</td>
         <td>
-          ai, mbbi, longin</td>
+          ai, longin</td>
         <td>
           Returns maximum number of milliseconds for I/O operations</td>
+      </tr>
+      <tr>
+        <td>
+          Any</td>
+        <td>
+          NA</td>
+        <td>
+          NA</td>
+        <td>
+          HISTOGRAM_BIN_TIME</td>
+        <td>
+          ao, longout</td>
+        <td>
+          Sets the time per bin in msec in the statistics histogram</td>
       </tr>
     </tbody>
   </table>
@@ -1456,7 +1584,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")</pre>
       </tr>
       <tr>
         <td>
-          3, 4</td>
+          3, 4, 23</td>
         <td>
           16-bit words</td>
         <td>
@@ -1484,7 +1612,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")</pre>
       </tr>
       <tr>
         <td>
-          6, 16</td>
+          6, 16, 23</td>
         <td>
           16-bit word</td>
         <td>
@@ -1509,7 +1637,9 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")</pre>
           ai, ao</td>
         <td>
           Read or write the delay time in seconds between polls for the read poller thread.
-        </td>
+          If &le;0 then the poller thread does not run periodically, it only runs when it
+          is woken up by an epicsEvent signal, which happens when the driver has an asynInt32
+          write with the MODBUS_READ drvUser string.</td>
       </tr>
     </tbody>
   </table>
@@ -1554,7 +1684,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           1, 2</td>
         <td>
-          NA</td>
+          Bit</td>
         <td>
           Array of bits</td>
         <td>
@@ -1566,9 +1696,9 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
       </tr>
       <tr>
         <td>
-          3, 4</td>
+          3, 4, 23</td>
         <td>
-          NA</td>
+          16-bit word</td>
         <td>
           Array of 16, 32 or 64-bit words</td>
         <td>
@@ -1582,7 +1712,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           15</td>
         <td>
-          NA</td>
+          Bit</td>
         <td>
           Array of bits</td>
         <td>
@@ -1594,9 +1724,9 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
       </tr>
       <tr>
         <td>
-          16</td>
+          16, 23</td>
         <td>
-          NA</td>
+          16-bit word</td>
         <td>
           Array of 16, 32, or 64-bit words</td>
         <td>
@@ -1610,7 +1740,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           Any</td>
         <td>
-          NA</td>
+          32-bit word</td>
         <td>
           NA</td>
         <td>
@@ -1620,6 +1750,103 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           Returns a histogram array of the I/O times in milliseconds since histogramming was
           last enabled.</td>
+      </tr>
+      <tr>
+        <td>
+          Any</td>
+        <td>
+          32-bit word</td>
+        <td>
+          NA</td>
+        <td>
+          HISTOGRAM_TIME_AXIS</td>
+        <td>
+          waveform (input)</td>
+        <td>
+          Returns the time axis of the histogram data. Each element is HISTOGRAM_BIN_TIME
+          msec.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3>
+    asynOctet</h3>
+  <p>
+    asynOctet device support is selected with</p>
+  <pre>field(DTYP,"asynOctetRead")
+field(INP,"@asyn(portName,offset,timeout)drvUser")
+    </pre>
+  <p>
+    or</p>
+  <pre>field(DTYP,"asynOctetWrite")
+field(INP,"@asyn(portName,offset,timeout)drvUser")
+    </pre>
+  <p>
+    asynOctet device support is used to read or write strings of up to 250 characters.</p>
+  <p>
+    Note: The 0 terminating byte at the end of the string in a waveform record or stringout
+    record is not written to the Modbus device.</p>
+  <p>
+    Note: On input number of characters read from the Modbus device will be the lesser
+    of:<br />
+    - the number of characters in the record minus the terminating 0 byte (39 for stringin,
+    NELM-1 for waveform) or
+    <br />
+    - the number of characters contained in the registers defined modbusLength argument
+    to drvModbusAsynConfigure (modbusLength or modbusLength*2 depending on whether the
+    drvUser field specifies 1 or 2 characters per register.</p>
+  <p>
+    The string will be truncated if any of the characters read from Modbus is a 0 byte,
+    but there is no guarantee that the last character in the string is followed by a
+    0 byte in the Modbus registers. Generally either modbusLength or NELM in the waveform
+    record should be used to define the correct length for the string.
+  </p>
+  <table border="1" cellpadding="2" cellspacing="2" style="text-align: left">
+    <tbody>
+      <tr>
+        <th align="center" colspan="6,">
+          asynOctet Device Support</th>
+      </tr>
+      <tr>
+        <th>
+          Modbus function</th>
+        <th>
+          Offset type</th>
+        <th>
+          Data type</th>
+        <th>
+          drvUser</th>
+        <th>
+          Records supported</th>
+        <th>
+          Description</th>
+      </tr>
+      <tr>
+        <td>
+          3, 4, 23</td>
+        <td>
+          16-bit word</td>
+        <td>
+          String of characters</td>
+        <td>
+          STRING_HIGH, STRING_LOW, STRING_HIGH_LOW, or STRING_LOW_HIGH</td>
+        <td>
+          waveform (input) or stringin</td>
+        <td>
+          value = Modbus data[]</td>
+      </tr>
+      <tr>
+        <td>
+          16, 23</td>
+        <td>
+          16-bit word</td>
+        <td>
+          String of characters</td>
+        <td>
+          STRING_HIGH, STRING_LOW, STRING_HIGH_LOW, or STRING_LOW_HIGH</td>
+        <td>
+          waveform (output) or stringout</td>
+        <td>
+          Modbus write value[]</td>
       </tr>
     </tbody>
   </table>
@@ -1691,7 +1918,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
           asynInt32Array support for waveform record with discrete, coil, or register inputs.
         </td>
         <td>
-          P, R, PORT, NELM, SCAN</td>
+          P, R, PORT, OFFSET, NELM, SCAN</td>
       </tr>
       <tr>
         <td>
@@ -1741,7 +1968,7 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
           asynInt32Array support for waveform record with discrete, coil, or register outputs.
         </td>
         <td>
-          P, R, PORT, NELM</td>
+          P, R, PORT, OFFSET, NELM</td>
       </tr>
       <tr>
         <td>
@@ -1787,6 +2014,38 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
       </tr>
       <tr>
         <td>
+          stringin.template</td>
+        <td>
+          asynOctet support for stringin record</td>
+        <td>
+          P, R, PORT, OFFSET, DATA_TYPE, SCAN</td>
+      </tr>
+      <tr>
+        <td>
+          stringout.template</td>
+        <td>
+          asynOctet support for stringout record</td>
+        <td>
+          P, R, PORT, OFFSET, DATA_TYPE, INITIAL_READBACK</td>
+      </tr>
+      <tr>
+        <td>
+          stringWaveformIn.template</td>
+        <td>
+          asynOctet input support for waveform record</td>
+        <td>
+          P, R, PORT, OFFSET, DATA_TYPE, NELM, SCAN</td>
+      </tr>
+      <tr>
+        <td>
+          stringWaveformOut.template</td>
+        <td>
+          asynOctet output support for waveform record</td>
+        <td>
+          P, R, PORT, OFFSET, DATA_TYPE, NELM, INITIAL_READBACK</td>
+      </tr>
+      <tr>
+        <td>
           asynRecord.template</td>
         <td>
           Support for asyn record. Useful for controlling trace printing, and for debugging.
@@ -1799,6 +2058,14 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
           poll_delay.template</td>
         <td>
           Support for ao record to control the delay time for the poller thread.</td>
+        <td>
+          P, R, PORT</td>
+      </tr>
+      <tr>
+        <td>
+          poll_trigger.template</td>
+        <td>
+          Support for bo record to trigger running the poller thread.</td>
         <td>
           P, R, PORT</td>
       </tr>
@@ -1957,6 +2224,13 @@ field(INP,"@asyn(portName,offset,timeout)drvUser")
         <td>
           Scan rate for record (e.g. "1 second", "I/O Intr", etc.).</td>
       </tr>
+      <tr>
+        <td>
+          INITIAL_READBACK</td>
+        <td>
+          Controls whether an initial readback from the device is done for the stringout or
+          string waveform output records.</td>
+      </tr>
     </tbody>
   </table>
   <h2 id="Example_Applications">
@@ -2097,10 +2371,10 @@ drvModbusAsynConfigure("K1_Cn_Out_Word_Array", "Koyo1", 1, 16, 040600, 020,    0
     one would normally only load at most 2 drivers for the C control relays, for example
     function code 1 (read coils), and function code 5 (write single coil).</p>
   <p>
-    There is another example application in the iocTest directory, sim1.cmd and sim1.substutions.
-    This example is used for testing the different Modbus data types. It was tested
-    with the <a href="http://www.modbustools.com/modbus_slave.asp">Modbus Slave</a>
-    program, which is an inexpensive Modbus slave emulator.</p>
+    There are other example applications in the iocTest directory, sim*.cmd and sim*.substitutions.
+    These examples are used for testing the different Modbus data types and other features.
+    I have used them with the <a href="http://www.modbustools.com/modbus_slave.asp">Modbus
+      Slave</a> program, which is an inexpensive Modbus slave emulator.</p>
   <h2 id="medm_screens">
     medm screens</h2>
   <p>
@@ -2315,7 +2589,7 @@ epics> asynSetTraceMask "K1_Yn_In_Word",0,1     # Disable traceIODriver
   <div style="text-align: center">
     <hr />
     <h3>
-      asynRegister.adl.adl</h3>
+      asynRegister.adl</h3>
     <h3>
       Using the asynRecord to perform actual I/O to a PLC. Note that Interface (IFACE)=asynUInt32Digital,
       Transfer (TMOD)=Write, and Output (UI32OUT)=1. This value will be written to the
