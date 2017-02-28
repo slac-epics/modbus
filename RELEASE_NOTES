@@ -1,2 +1,4 @@
-R2.9-0.2.0:   28-Feb-2017, H. Slepicka (slepicka)
-    First version of modbus working with the new Git Workflow.
+R2.9-1.0.0:   28-Feb-2017, H. Slepicka (slepicka)
+    Applied patch <>/patches/0001-INT32_LE_BE_ALT_DATA_TYPES.patch
+        Add support for 32-bit integer little and big-endian,
+        alternate data format.
