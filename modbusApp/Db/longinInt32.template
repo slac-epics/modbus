@@ -3,4 +3,5 @@ record(longin,"$(P)$(R)") {
     field(DTYP,"asynInt32")
     field(INP,"@asyn($(PORT) $(OFFSET))$(DATA_TYPE)")
     field(SCAN, "$(SCAN)")
+    field(EGU, "$(UNITS)")
 }

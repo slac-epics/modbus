@@ -150,6 +150,7 @@ typedef struct modbusStr
     asynUser  *pasynUserCommon; /* asynUser for asynCommon interface to asyn octet port */
     asynUser  *pasynUserTrace;  /* asynUser for asynTrace on this port */
     asynStandardInterfaces asynStdInterfaces;  /* Structure for standard interfaces */
+    epicsMutexId mutexId;       /* Mutex for interlocking access to doModbusIO */
     int modbusSlave;            /* Modbus slave address */
     int modbusFunction;         /* Modbus function code */
     int modbusStartAddress;     /* Modbus starting addess for this port */

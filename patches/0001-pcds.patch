@@ -1,0 +1,180 @@
+diff --git a/modbusApp/Db/Makefile b/modbusApp/Db/Makefile
+index e9f258b..f871981 100755
+--- a/modbusApp/Db/Makefile
++++ b/modbusApp/Db/Makefile
+@@ -21,8 +21,10 @@ DB += longoutInt32.template
+ DB += mbbiDirect.template
+ DB += mbboDirect.template
+ DB += ai.template
++DB += ai_no_conv.template
+ DB += ai_average.template
+ DB += ao.template
++DB += ao_no_conv.template
+ DB += aiFloat64.template
+ DB += aoFloat64.template
+ DB += intarray_in.template
+diff --git a/modbusApp/Db/aiFloat64.template b/modbusApp/Db/aiFloat64.template
+index 8b012f9..1e3084e 100644
+--- a/modbusApp/Db/aiFloat64.template
++++ b/modbusApp/Db/aiFloat64.template
+@@ -6,5 +6,6 @@ record(ai, "$(P)$(R)") {
+     field(LOPR,"$(LOPR)")
+     field(PREC,"$(PREC)")
+     field(SCAN,"$(SCAN)")
++    field(EGU, "$(UNITS)")
+ }
+ 
+diff --git a/modbusApp/Db/ai_no_conv.template b/modbusApp/Db/ai_no_conv.template
+new file mode 100644
+index 0000000..261909b
+--- /dev/null
++++ b/modbusApp/Db/ai_no_conv.template
+@@ -0,0 +1,11 @@
++# ai record template for register inputs
++record(ai, "$(P)$(R)") {
++    field(DTYP,"asynInt32")
++    field(INP,"@asynMask($(PORT) $(OFFSET) $(BITS))MODBUS_DATA")
++    field(LINR,"NO CONVERSION")
++    field(HOPR,"$(HOPR)")
++    field(LOPR,"$(LOPR)")
++    field(PREC,"$(PREC)")
++    field(SCAN,"$(SCAN)")
++}
++
+diff --git a/modbusApp/Db/aoFloat64.template b/modbusApp/Db/aoFloat64.template
+index 6d22111..135f25f 100644
+--- a/modbusApp/Db/aoFloat64.template
++++ b/modbusApp/Db/aoFloat64.template
+@@ -5,5 +5,6 @@ record(ao, "$(P)$(R)") {
+     field(HOPR,"$(HOPR)")
+     field(LOPR,"$(LOPR)")
+     field(PREC,"$(PREC)")
++    field(EGU, "$(UNITS)")
+ }
+ 
+diff --git a/modbusApp/Db/ao_no_conv.template b/modbusApp/Db/ao_no_conv.template
+new file mode 100644
+index 0000000..7968a3f
+--- /dev/null
++++ b/modbusApp/Db/ao_no_conv.template
+@@ -0,0 +1,10 @@
++# ao record template for register outputs
++record(ao, "$(P)$(R)") {
++    field(DTYP,"asynInt32")
++    field(OUT,"@asynMask($(PORT) $(OFFSET) $(BITS))MODBUS_DATA")
++    field(LINR,"NO CONVERSION")
++    field(HOPR,"$(HOPR)")
++    field(LOPR,"$(LOPR)")
++    field(PREC,"$(PREC)")
++}
++
+diff --git a/modbusApp/Db/longinInt32.template b/modbusApp/Db/longinInt32.template
+index 81c9543..2995cef 100644
+--- a/modbusApp/Db/longinInt32.template
++++ b/modbusApp/Db/longinInt32.template
+@@ -3,4 +3,5 @@ record(longin,"$(P)$(R)") {
+     field(DTYP,"asynInt32")
+     field(INP,"@asyn($(PORT) $(OFFSET))$(DATA_TYPE)")
+     field(SCAN, "$(SCAN)")
++    field(EGU, "$(UNITS)")
+ }
+diff --git a/modbusApp/Db/longoutInt32.template b/modbusApp/Db/longoutInt32.template
+index dcb9d0b..932cf4f 100644
+--- a/modbusApp/Db/longoutInt32.template
++++ b/modbusApp/Db/longoutInt32.template
+@@ -2,4 +2,5 @@
+ record(longout,"$(P)$(R)") {
+     field(DTYP,"asynInt32")
+     field(OUT,"@asyn($(PORT) $(OFFSET))$(DATA_TYPE)")
++    field(EGU, "$(UNITS)")
+ }
+diff --git a/modbusApp/Db/statistics.template b/modbusApp/Db/statistics.template
+index 609e8b0..717c796 100644
+--- a/modbusApp/Db/statistics.template
++++ b/modbusApp/Db/statistics.template
+@@ -17,25 +17,9 @@ record(waveform,"$(P)$(R)Hist") {
+     field(INP,"@asyn($(PORT) 0)READ_HISTOGRAM")
+     field(FTVL,"LONG")
+     field(NELM,"200")  # This number should match driver
+-    field(FLNK,"$(P)$(R)HistTimeAxis.PROC")
+-}
+-
+-record(waveform,"$(P)$(R)HistTimeAxis") {
+-    field(DTYP,"asynInt32ArrayIn")
+-    field(INP,"@asyn($(PORT) 0)HISTOGRAM_TIME_AXIS")
+-    field(FTVL,"LONG")
+-    field(NELM,"200")  # This number should match driver
+     field(FLNK,"$(P)$(R)ReadOK.PROC")
+ }
+ 
+-record(longout,"$(P)$(R)MsPerBin") {
+-    field(DTYP,"asynInt32")
+-    field(OUT,"@asyn($(PORT) 0)HISTOGRAM_BIN_TIME")
+-    field(DRVL,"0")
+-    field(VAL,"1")
+-    field(PINI,"1")
+-}
+-
+ record(longin,"$(P)$(R)ReadOK") {
+     field(DTYP,"asynInt32")
+     field(INP,"@asyn($(PORT) 0)READ_OK")
+diff --git a/modbusApp/src/Makefile b/modbusApp/src/Makefile
+index fdcd618..eea3fba 100755
+--- a/modbusApp/src/Makefile
++++ b/modbusApp/src/Makefile
+@@ -14,6 +14,7 @@ DBD += modbus.dbd
+ DBD += modbusSupport.dbd
+ 
+ INC += drvModbusAsyn.h
++INC += modbusInterpose.h
+ 
+ LIBRARY_IOC = modbus
+ 
+@@ -37,6 +38,7 @@ PROD_IOC = modbusApp
+ # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
+ PROD_SRCS_DEFAULT += modbus_registerRecordDeviceDriver.cpp modbusMain.cpp
+ PROD_SRCS_vxWorks += modbus_registerRecordDeviceDriver.cpp
++#PROD_SRCS_DEFAULT += testModbusSyncIO.cpp
+ 
+ PROD_LIBS += modbus
+ PROD_LIBS += asyn
+diff --git a/modbusApp/src/drvModbusAsyn.c b/modbusApp/src/drvModbusAsyn.c
+index 6790d3b..06e19e2 100755
+--- a/modbusApp/src/drvModbusAsyn.c
++++ b/modbusApp/src/drvModbusAsyn.c
+@@ -150,6 +150,7 @@ typedef struct modbusStr
+     asynUser  *pasynUserCommon; /* asynUser for asynCommon interface to asyn octet port */
+     asynUser  *pasynUserTrace;  /* asynUser for asynTrace on this port */
+     asynStandardInterfaces asynStdInterfaces;  /* Structure for standard interfaces */
++    epicsMutexId mutexId;       /* Mutex for interlocking access to doModbusIO */
+     int modbusSlave;            /* Modbus slave address */
+     int modbusFunction;         /* Modbus function code */
+     int modbusStartAddress;     /* Modbus starting addess for this port */
+diff --git a/modbusApp/src/modbusInclude.dbd b/modbusApp/src/modbusInclude.dbd
+index 6cef253..bee9ca8 100644
+--- a/modbusApp/src/modbusInclude.dbd
++++ b/modbusApp/src/modbusInclude.dbd
+@@ -3,5 +3,5 @@ include "asyn.dbd"
+ include "drvAsynIPPort.dbd"
+ include "drvAsynSerialPort.dbd"
+ include "modbusSupport.dbd"
+-registrar(testModbusSyncIORegister)
++#registrar(testModbusSyncIORegister)
+ 
+diff --git a/modbusApp/src/modbusInterpose.h b/modbusApp/src/modbusInterpose.h
+index 55e9468..d139c55 100644
+--- a/modbusApp/src/modbusInterpose.h
++++ b/modbusApp/src/modbusInterpose.h
+@@ -12,9 +12,9 @@
+ #include <epicsExport.h>
+ 
+ typedef enum {
+-    modbusLinkTCP,
+-    modbusLinkRTU,
+-    modbusLinkASCII
++    modbusLinkTCP=0,
++    modbusLinkRTU=1,
++    modbusLinkASCII=2
+ } modbusLinkType;
+ 
+ #ifdef __cplusplus

@@ -1,2 +1,7 @@
-R2.9-0.2.0:   28-Feb-2017, H. Slepicka (slepicka)
-    First version of modbus working with the new Git Workflow.
+R2.9-2.0.0:   28-Feb-2017, H. Slepicka (slepicka)
+    Applied patch <>/patches/0001-pcds.patch
+        Add ai_no_conv and ao_no_conv to DB.
+        Add EGU field to aiFloat64, aoFloat64, longinInt32, longoutInt32.
+        Remove HistTimeAxis and MsPerBin from statistics.template
+        Add modbusInterpose header file.
+        Add mutex for interlocking access to doModbusIO

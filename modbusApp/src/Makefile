@@ -14,6 +14,7 @@ DBD += modbus.dbd
 DBD += modbusSupport.dbd
 
 INC += drvModbusAsyn.h
+INC += modbusInterpose.h
 
 LIBRARY_IOC = modbus
 
@@ -37,6 +38,7 @@ PROD_IOC = modbusApp
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 PROD_SRCS_DEFAULT += modbus_registerRecordDeviceDriver.cpp modbusMain.cpp
 PROD_SRCS_vxWorks += modbus_registerRecordDeviceDriver.cpp
+#PROD_SRCS_DEFAULT += testModbusSyncIO.cpp
 
 PROD_LIBS += modbus
 PROD_LIBS += asyn
