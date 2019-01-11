@@ -1,0 +1,54 @@
+R2.11-1.0.0    2019-01-10 Bruce Hill
+	Release 2-11, June 28, 2018, Mark Rivers
+		Fixed problem with asynPrintIO. It was printing too few bytes under some conditions.
+		Added counter for # of I/O errors and use to suppress dup errors
+			with a count of skipped error msgs on recovery.  Scott Stubbs & Bruce Hill
+	Applied slac-config-changes
+	Applied slac-changes
+		Add support for 32bit LE and BE & alt data format
+		Adding this record for register inputs that don't require a conversion.
+		Adding no conversion analog output template.
+		Adding units field to the ai/oFloat and longin/out32 records.
+		Enumeration values set to constants and install modbusInterpose.h
+
+R2.10.1-1.0.0    2019-01-10 Bruce Hill
+	Release 2-10, Sept 15, 2017, Mark Rivers
+		Adds epicsAtExit handler
+		Reduced timeout related error msg count
+		Exmple st.cmd recommends asynSetOption("disconnectOnReadTimeout", "Y")
+			for faster reconnections.
+	Release 2-10-1, Sept 15, 2017, Mark Rivers
+		Incr Modbus transaction ID on both Rd & Wr. Thanks to Eric Norum
+	Applied slac-config-changes
+	Applied slac-changes
+		Add support for 32bit LE and BE & alt data format
+		Adding this record for register inputs that don't require a conversion.
+		Adding no conversion analog output template.
+		Adding units field to the ai/oFloat and longin/out32 records.
+		Enumeration values set to constants and install modbusInterpose.h
+
+R2.9-2.0.2:   15-May-2017, B. Hill (bhill)
+	Creating a release w/ asyn/R4.31-1.0.0
+
+R2.9-2.0.1:   18-Apr-2017, B. Hill (bhill)
+	Creating a release w/ asyn/R4.30-1.1.1
+
+R2.9-2.0.0:   28-Feb-2017, H. Slepicka (slepicka)
+    Applied patch <>/patches/0001-pcds.patch
+        Add ai_no_conv and ao_no_conv to DB.
+        Add EGU field to aiFloat64, aoFloat64, longinInt32, longoutInt32.
+        Remove HistTimeAxis and MsPerBin from statistics.template
+        Add modbusInterpose header file.
+        Add mutex for interlocking access to doModbusIO
+
+R2.9-1.1.0:   06-Nov-2017, H. Slepicka (slepicka)
+    Bumped asyn to R4.31-0.1.0
+
+R2.9-1.0.0:   28-Feb-2017, H. Slepicka (slepicka)
+    Applied patch <>/patches/0001-INT32_LE_BE_ALT_DATA_TYPES.patch
+        Add support for 32-bit integer little and big-endian,
+        alternate data format.
+
+R2.9-0.2.0:   28-Feb-2017, H. Slepicka (slepicka)
+    First version of modbus working with the new Git Workflow.
+
