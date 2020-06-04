@@ -1,2 +1,6 @@
+R3.0-0.0.1:   04-Jun-2020, H. Slepicka (slepicka)
+    Update to the latest from collaboration.
+    Use asyn R4.39-0.0.1.
+
 R2.9-0.2.0:   28-Feb-2017, H. Slepicka (slepicka)
     First version of modbus working with the new Git Workflow.
