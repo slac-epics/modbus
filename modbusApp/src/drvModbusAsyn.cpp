@@ -85,8 +85,10 @@ static modbusDataTypeStruct modbusDataTypes[MAX_MODBUS_DATA_TYPES] = {
     {dataTypeBCDSigned,      MODBUS_BCD_SIGNED_STRING},
     {dataTypeUInt16,         MODBUS_UINT16_STRING},
     {dataTypeInt32LE,        MODBUS_INT32_LE_STRING},
+    {dataTypeInt32LEAlt,     MODBUS_INT32_LE_ALT_STRING},
     {dataTypeInt32LEBS,      MODBUS_INT32_LE_BS_STRING},
     {dataTypeInt32BE,        MODBUS_INT32_BE_STRING},
+    {dataTypeInt32BEAlt,     MODBUS_INT32_BE_ALT_STRING},
     {dataTypeInt32BEBS,      MODBUS_INT32_BE_BS_STRING},
     {dataTypeUInt32LE,       MODBUS_UINT32_LE_STRING},
     {dataTypeUInt32LEBS,     MODBUS_UINT32_LE_BS_STRING},
@@ -2254,11 +2256,25 @@ asynStatus drvModbusAsyn::readPlcInt64(modbusDataType_t dataType, int offset, ep
             *bufferLen = 2;
             break;
 
+        case dataTypeInt32LEAlt:
+            intUnion.ui16[w32_0] = bswap16(data_[offset]);
+            intUnion.ui16[w32_1] = bswap16(data_[offset+2]);
+            i64Result = isUnsigned ? (epicsInt64)intUnion.ui32 : (epicsInt64)intUnion.i32;
+            *bufferLen = 2;
+            break;
+
         case dataTypeUInt32BE:
             isUnsigned = true;
         case dataTypeInt32BE:
             intUnion.ui16[w32_1] = data_[offset];
             intUnion.ui16[w32_0] = data_[offset+1];
+            i64Result = isUnsigned ? (epicsInt64)intUnion.ui32 : (epicsInt64)intUnion.i32;
+            *bufferLen = 2;
+            break;
+
+        case dataTypeInt32BEAlt:
+            intUnion.ui16[w32_0] = bswap16(data_[offset]);
+            intUnion.ui16[w32_1] = bswap16(data_[offset+2]);
             i64Result = isUnsigned ? (epicsInt64)intUnion.ui32 : (epicsInt64)intUnion.i32;
             *bufferLen = 2;
             break;
@@ -2528,8 +2544,10 @@ asynStatus drvModbusAsyn::readPlcFloat(modbusDataType_t dataType, int offset, ep
         case dataTypeBCDUnsigned:
         case dataTypeInt16:
         case dataTypeInt32LE:
+        case dataTypeInt32LEAlt:
         case dataTypeInt32LEBS:
         case dataTypeInt32BE:
+        case dataTypeInt32BEAlt:
         case dataTypeInt32BEBS:
             status = readPlcInt32(dataType, offset, &i32Value, bufferLen);
             *output = (epicsFloat64)i32Value;
